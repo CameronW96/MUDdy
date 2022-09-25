@@ -61,7 +61,7 @@ int main_menu()
     menuwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
     keypad(menuwin, TRUE);
     int option = 1;
-    int ch;
+    uint16_t ch;
 
     mvprintw(0, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
@@ -146,7 +146,7 @@ struct Connection_Info game_info()
     // Display screen to get connection info etc. before starting game
     struct Connection_Info connection_info;
     WINDOW* childwin;
-    char buf[512]; 
+    char buf[512] = {0}; 
 
     childwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
     draw_game_info(childwin, half_width, half_height);
@@ -236,7 +236,7 @@ char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int 
     int counter = 0;
     while(true)
     {
-        char ch = wgetch(current_win);
+        uint16_t ch = wgetch(current_win);
         if (counter < max_buf_size)
         {
             // get char, print to screen, and add to buffer
@@ -246,14 +246,25 @@ char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int 
                     input_buf[counter + 1] = '\0';
                     return strcpy(dest_buf, input_buf);
                 case KEY_BACKSPACE:
-                    --counter;
-                    mvwaddch(current_win, ypos, xpos + counter, ' ');
-                    wmove(current_win, ypos, xpos + counter);
+                    if (counter > 0)
+                    {
+                        --counter;
+                        mvwaddch(current_win, ypos, xpos + counter, ' ');
+                        wmove(current_win, ypos, xpos + counter);
+                    }
+                    break;
+                case 127:
+                    if (counter > 0)
+                    {
+                        --counter;
+                        mvwaddch(current_win, ypos, xpos + counter, ' ');
+                        wmove(current_win, ypos, xpos + counter);
+                    }
                     break;
                 default:
                     waddch(current_win, ch);
-                    ++counter;
                     input_buf[counter] = ch;
+                    ++counter;
                     break;
             }
         }
@@ -266,6 +277,11 @@ char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int 
                     input_buf[counter + 1] = '\0';
                     return strcpy(dest_buf, input_buf);
                 case KEY_BACKSPACE:
+                    --counter;
+                    mvwaddch(current_win, ypos, xpos + counter, ' ');
+                    wmove(current_win, ypos, xpos + counter);
+                    break;
+                case 127:
                     --counter;
                     mvwaddch(current_win, ypos, xpos + counter, ' ');
                     wmove(current_win, ypos, xpos + counter);
