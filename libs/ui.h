@@ -1,5 +1,6 @@
 // Wrapper for the ncurses TUI
 
+#include <form.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +18,8 @@ static int half_height, half_width;
 
 struct Connection_Info
 {
-    char _ipv4addr[64];
-    char _password[64];
+    char _ipv4addr[128];
+    char _password[128];
 };
 
 void draw_main_menu(WINDOW* currentwin, int selected_option);
@@ -146,14 +147,25 @@ struct Connection_Info game_info()
     // Display screen to get connection info etc. before starting game
     struct Connection_Info connection_info;
     WINDOW* childwin;
-    char buf[512] = {0}; 
+    char buf[64] = {0}; 
+    char buf_[64] = {0}; 
+
 
     childwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
     draw_game_info(childwin, half_width, half_height);
 
-    get_user_input(childwin, buf, 255, half_height / 4, half_width / 4, -1);
+    // Get IP address
+    get_user_input(childwin, buf, 64, half_height / 4, half_width / 4, -1);
+    strcpy(connection_info._ipv4addr, buf);
+    //memset(buf, 0, 64*sizeof(buf));
 
-    mvprintw(0, 0, "You typed: %s", buf);
+    // Get password
+    get_user_input(childwin, buf_, 64, (half_height / 4 + 3), half_width / 4, -1);
+    strcpy(connection_info._password, buf_);
+    //memset(buf, 0, 64*sizeof(buf_));
+
+    mvprintw(10, 0, "IP Address: %s", connection_info._ipv4addr);
+    mvprintw(11, 0, "Password: %s", connection_info._password);
 
     getch();
 
@@ -243,7 +255,7 @@ char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int 
             switch (ch)
             {
                 case 10:
-                    input_buf[counter + 1] = '\0';
+                    input_buf[counter] = '\0';
                     return strcpy(dest_buf, input_buf);
                 case KEY_BACKSPACE:
                     if (counter > 0)
@@ -274,7 +286,7 @@ char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int 
             switch (ch)
             {
                 case 10:
-                    input_buf[counter + 1] = '\0';
+                    input_buf[counter] = '\0';
                     return strcpy(dest_buf, input_buf);
                 case KEY_BACKSPACE:
                     --counter;
