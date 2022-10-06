@@ -36,6 +36,7 @@ bool init_ui()
     clear();
     noecho();
     cbreak();
+    keypad(stdscr, TRUE);
 
     // Get terminal size
     getmaxyx(stdscr, term_height, term_width);
@@ -146,30 +147,82 @@ struct Connection_Info game_info()
 {
     // Display screen to get connection info etc. before starting game
     struct Connection_Info connection_info;
-    WINDOW* childwin;
-    char buf[64] = {0}; 
-    char buf_[64] = {0}; 
+    FIELD *field[3];
+    FORM *connection_data_form;
 
+    field[0] = new_field(1, 16, half_height, half_width - 8, 0, 0);
+    field[1] = new_field(1, 16, half_height + 2, half_width - 8, 0, 0);
+    field[2] = NULL;
 
-    childwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
-    draw_game_info(childwin, half_width, half_height);
+    set_field_back(field[0], A_UNDERLINE);
+    field_opts_off(field[0], O_AUTOSKIP);
 
-    // Get IP address
-    get_user_input(childwin, buf, 64, half_height / 4, half_width / 4, -1);
-    strcpy(connection_info._ipv4addr, buf);
-    //memset(buf, 0, 64*sizeof(buf));
+    set_field_back(field[1], A_UNDERLINE);
+    field_opts_off(field[1], O_AUTOSKIP);
 
-    // Get password
-    get_user_input(childwin, buf_, 64, (half_height / 4 + 3), half_width / 4, -1);
-    strcpy(connection_info._password, buf_);
-    //memset(buf, 0, 64*sizeof(buf_));
+    connection_data_form = new_form(field);
+    post_form(connection_data_form);
+
+    mvprintw(term_height * .10f, half_width - 11, "Connection Information");
+    mvprintw(half_height, half_width - 25, "IPv4 Address:");
+    mvprintw(half_height + 2, half_width - 25, "Password:");
+    mvprintw(term_height - 1, 0, "F10 = Submit   Up/Down = Navigate Fields   Enter = Next");
+    
+    refresh();
+
+    int ch = 0;
+    while ((ch = getch()) != KEY_F(1))
+    {
+        switch (ch)
+            {
+                case 10:
+                    form_driver(connection_data_form, REQ_NEXT_FIELD);
+                    form_driver(connection_data_form, REQ_END_LINE);
+                    break;
+                case KEY_BACKSPACE:
+                    form_driver(connection_data_form, REQ_DEL_PREV);
+                    break;
+                case 127:
+                    form_driver(connection_data_form, REQ_DEL_PREV);
+                    break;
+                case KEY_DOWN:
+                    form_driver(connection_data_form, REQ_NEXT_FIELD);
+                    form_driver(connection_data_form, REQ_END_LINE);
+                    break;
+                case KEY_UP:
+                    form_driver(connection_data_form, REQ_PREV_FIELD);
+                    form_driver(connection_data_form, REQ_END_LINE);
+                    break;
+                case KEY_LEFT:
+                    form_driver(connection_data_form, REQ_LEFT_CHAR);
+                    break;
+                case KEY_RIGHT:
+                    form_driver(connection_data_form, REQ_RIGHT_CHAR);
+                    break;
+                case KEY_DC:
+                    form_driver(connection_data_form, REQ_DEL_CHAR);
+                default:
+                    form_driver(connection_data_form, ch);
+				    break;
+            }
+    }
+
+    form_driver(connection_data_form, REQ_VALIDATION);
+    strcpy(connection_info._ipv4addr, field_buffer(field[0], 0));
+    strcpy(connection_info._password, field_buffer(field[1], 0));
 
     mvprintw(10, 0, "IP Address: %s", connection_info._ipv4addr);
     mvprintw(11, 0, "Password: %s", connection_info._password);
 
-    getch();
+    if (DEBUG)
+    {
+        getch();
+    }
 
-    delwin(childwin);
+    free_form(connection_data_form);
+    free_field(field[0]);
+    free_field(field[1]);
+
     return connection_info;
 }
 
