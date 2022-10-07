@@ -1,9 +1,11 @@
 // Wrapper for the ncurses TUI
 
+#include "asciiframes.h"
 #include <form.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define DEBUG TRUE
 
@@ -211,11 +213,10 @@ struct Connection_Info game_info()
     strcpy(connection_info._ipv4addr, field_buffer(field[0], 0));
     strcpy(connection_info._password, field_buffer(field[1], 0));
 
-    mvprintw(10, 0, "IP Address: %s", connection_info._ipv4addr);
-    mvprintw(11, 0, "Password: %s", connection_info._password);
-
     if (DEBUG)
     {
+        mvprintw(10, 0, "IP Address: %s", connection_info._ipv4addr);
+        mvprintw(11, 0, "Password: %s", connection_info._password);
         getch();
     }
 
@@ -226,21 +227,55 @@ struct Connection_Info game_info()
     return connection_info;
 }
 
-void draw_game_info(WINDOW* currentwin, int height, int width)
-{
-    int max_x, max_y;
-    getmaxyx(currentwin, max_y, max_x);
-    box(currentwin, 0, 0);
-    mvwprintw(currentwin, 0, 0, "%d", max_x);
-    mvwprintw(currentwin, 1, 0, "%d", max_y);
-    mvwprintw(currentwin, max_y * .10f, (max_x / 2) - 5, "Hallo");
+// void draw_game_info(WINDOW* currentwin, int height, int width)
+// {
+//     int max_x, max_y;
+//     getmaxyx(currentwin, max_y, max_x);
+//     box(currentwin, 0, 0);
+//     mvwprintw(currentwin, 0, 0, "%d", max_x);
+//     mvwprintw(currentwin, 1, 0, "%d", max_y);
+//     mvwprintw(currentwin, max_y * .10f, (max_x / 2) - 5, "Hallo");
 
-
-
-}
+// }
 
 // Start waiting_screen
 void waiting_screen()
+{
+    WINDOW *waitingwin;
+    waitingwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
+    box(waitingwin, 0, 0);
+
+    timeout(-1);
+    nodelay(waitingwin, FALSE);
+
+    int textwidth = strlen(PW6) / 2;
+    char ch = ' ';
+
+    mvwprintw(waitingwin, 1, half_width / 2 - textwidth, PW1);
+    mvwprintw(waitingwin, 2, half_width / 2 - textwidth, PW2);
+    mvwprintw(waitingwin, 3, half_width / 2 - textwidth, PW3);
+    mvwprintw(waitingwin, 4, half_width / 2 - textwidth, PW4);
+    mvwprintw(waitingwin, 5, half_width / 2 - textwidth, PW5);
+    mvwprintw(waitingwin, 6, half_width / 2 - textwidth, PW6);
+
+    wrefresh(waitingwin);
+
+    // clock_t start = clock();
+
+    // while ((clock() - start)  / CLOCKS_PER_SEC < 10)
+    // {
+
+    // }
+
+    ch = getch();
+    mvprintw(0, 0, "%c", ch);
+
+
+    delwin(waitingwin);
+
+}
+
+void update_waiting_screen()
 {
 
 }

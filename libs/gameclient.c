@@ -28,7 +28,7 @@ int main ()
 {
     init_ui();
 
-    game_info();
+    waiting_screen();
 
     cleanup();
 }
