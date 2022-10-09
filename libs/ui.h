@@ -10,10 +10,7 @@
 #define DEBUG TRUE
 
 // ******************************************* STATIC GLOBALS ******************************************* \\ 
-//static WINDOW* menuwin;
-static WINDOW* chatwin;
 static WINDOW* inputwin;
-static WINDOW* statuswin;
 
 static int term_height, term_width;
 static int half_height, half_width;
@@ -36,6 +33,7 @@ bool init_ui()
     // Basic init sequence
     initscr();
     clear();
+    //start_color();
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
@@ -53,6 +51,8 @@ bool init_ui()
         mvprintw(4, 0, "Half height: %d", half_height);
         mvprintw(5, 0, "COLS: %d", COLS);
         mvprintw(6, 0, "LINES: %d", LINES);
+
+        refresh();
     }
     // Determine if terminal supports color
 
@@ -245,12 +245,10 @@ void waiting_screen()
     waitingwin = newwin(half_height, half_width, half_height / 2, half_width / 2);
     box(waitingwin, 0, 0);
 
-    timeout(-1);
-    nodelay(waitingwin, FALSE);
-
+    // Get length of longest line
     int textwidth = strlen(PW6) / 2;
-    char ch = ' ';
 
+    // "Please Wait..." ASCII art
     mvwprintw(waitingwin, 1, half_width / 2 - textwidth, PW1);
     mvwprintw(waitingwin, 2, half_width / 2 - textwidth, PW2);
     mvwprintw(waitingwin, 3, half_width / 2 - textwidth, PW3);
@@ -260,16 +258,15 @@ void waiting_screen()
 
     wrefresh(waitingwin);
 
-    // clock_t start = clock();
+    clock_t start = clock();
 
-    // while ((clock() - start)  / CLOCKS_PER_SEC < 10)
-    // {
+    // Simulate waiting condition - replace with wait for connection
+    while ((clock() - start)  / CLOCKS_PER_SEC < 10)
+    {
 
-    // }
+    }
 
-    ch = getch();
-    mvprintw(0, 0, "%c", ch);
-
+    getch();
 
     delwin(waitingwin);
 
@@ -283,13 +280,69 @@ void update_waiting_screen()
 // Start game screen
 void game_screen()
 {
-    //
+    // Game screen should draw on top of stdscr
+    WINDOW *chatwin;
+    WINDOW *statuswin;
+    WINDOW *infowin;
+    FORM *chatform;
+    FIELD *field [2];
+
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+
+    // Determin child window size based on terminal size
+    int statusy = LINES;
+    int statusx = COLS * .20f;
+    int infoy =  LINES * .85f;
+    int infox = COLS - statusx;
+    int chaty = LINES - infoy;
+    int chatx = COLS - statusx;
+
+    infowin = newwin(infoy, infox, 0, 0);
+    box(infowin, 0, 0);
+    wrefresh(infowin);
+
+    statuswin = newwin(statusy, statusx, 0, infox);
+    box(statuswin, 0, 0);
+    wrefresh(statuswin);
+
+    chatwin = newwin(chaty, chatx, infoy, 0);
+    box(chatwin, 0, 0);
+
+    keypad(chatwin, TRUE);
+    nodelay(chatwin, TRUE);
+    
+    field[0] = new_field(chaty - 2, chatx - 2, infoy, 0, 0, 0);
+    field[1] = NULL;
+
+    //set_field_back(field[0], COLOR_PAIR(1));
+
+    chatform = new_form(field);
+    set_form_win(chatform, chatwin);
+    set_form_sub(chatform, derwin(chatwin, LINES, COLS, 2, 2));
+
+    post_form(chatform);
+    wrefresh(chatwin);
+
+    // Simulate waiting condition - replace with wait for connection
+    clock_t start = clock();
+    while ((clock() - start)  / CLOCKS_PER_SEC < 10)
+    {
+
+    }
+
+    delwin(statuswin);
+    delwin(infowin);
+    delwin(chatwin);
+    unpost_form(chatform);
+    free_form(chatform);
+    free_field(field[0]);
 }
 
 // Insert text into the chat window
-int draw_to_chatwin()
+int draw_to_chatwin(WINDOW *childwin, char *str, int max_char_per_line) // working on drawing to game screen before starting network portion
 {
-
+    int max_x, max_y;
+    getmaxyx(childwin, max_y, max_x);
 }
 
 // Insert text into the input window
