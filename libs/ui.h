@@ -2,6 +2,7 @@
 
 #include "asciiframes.h"
 #include <form.h>
+#include <math.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +25,7 @@ struct Connection_Info
 void draw_main_menu(WINDOW* currentwin, int selected_option);
 char* get_user_input(WINDOW* current_win, char* dest_buf, int max_buf_size, int start_y, int start_x, int margin);
 void draw_game_info(WINDOW* currentwin, int height, int width);
+int draw_to_chatwin(WINDOW *childwin, char *str);
 
 // **************************************** Function Definitions **************************************** \\ 
 
@@ -283,6 +285,7 @@ void game_screen()
     // Game screen should draw on top of stdscr
     WINDOW *chatwin;
     WINDOW *statuswin;
+    WINDOW *infowinborder;
     WINDOW *infowin;
     FORM *chatform;
     FIELD *field [2];
@@ -297,9 +300,14 @@ void game_screen()
     int chaty = LINES - infoy;
     int chatx = COLS - statusx;
 
-    infowin = newwin(infoy, infox, 0, 0);
-    box(infowin, 0, 0);
+    infowinborder = newwin(infoy, infox, 0, 0);
+    box(infowinborder, 0, 0);
+    wrefresh(infowinborder);
+
+    infowin = newwin(infoy -2, infox - 2, 1, 1);
     wrefresh(infowin);
+    
+    scrollok(infowin, TRUE);
 
     statuswin = newwin(statusy, statusx, 0, infox);
     box(statuswin, 0, 0);
@@ -309,7 +317,7 @@ void game_screen()
     box(chatwin, 0, 0);
 
     keypad(chatwin, TRUE);
-    nodelay(chatwin, TRUE);
+    nodelay(chatwin, FALSE);
     
     field[0] = new_field(chaty - 2, chatx - 2, infoy, 0, 0, 0);
     field[1] = NULL;
@@ -323,11 +331,59 @@ void game_screen()
     post_form(chatform);
     wrefresh(chatwin);
 
-    // Simulate waiting condition - replace with wait for connection
-    clock_t start = clock();
-    while ((clock() - start)  / CLOCKS_PER_SEC < 10)
-    {
+    //Simulate waiting condition - replace with wait for connection
+    // clock_t start = clock();
+    // while ((clock() - start)  / CLOCKS_PER_SEC < 10)
+    // {
 
+    // }
+
+    int ch;
+    while(ch = wgetch(chatwin) != KEY_F(1))
+    {
+        //ch = wgetch(chatwin);
+        // if (ch == ERR)
+        // {
+        //     continue;
+        // }
+        if (ch != ERR)
+        {
+            switch (ch)
+            {
+                case 10:
+                    form_driver(chatform, REQ_NEXT_FIELD);
+                    form_driver(chatform, REQ_END_LINE);
+                    break;
+                case KEY_BACKSPACE:
+                    form_driver(chatform, REQ_DEL_PREV);
+                    break;
+                case 127:
+                    form_driver(chatform, REQ_DEL_PREV);
+                    break;
+                case KEY_DOWN:
+                    form_driver(chatform, REQ_NEXT_FIELD);
+                    form_driver(chatform, REQ_END_LINE);
+                    break;
+                case KEY_UP:
+                    form_driver(chatform, REQ_PREV_FIELD);
+                    form_driver(chatform, REQ_END_LINE);
+                    break;
+                case KEY_LEFT:
+                    form_driver(chatform, REQ_LEFT_CHAR);
+                    break;
+                case KEY_RIGHT:
+                    form_driver(chatform, REQ_RIGHT_CHAR);
+                    break;
+                case KEY_DC:
+                    form_driver(chatform, REQ_DEL_CHAR);
+                case KEY_F(10):
+                    draw_to_chatwin(infowin, field_buffer(field[0], 0));
+                    break;
+                default:
+                    form_driver(chatform, ch);
+                    break;
+            }
+        }
     }
 
     delwin(statuswin);
@@ -339,11 +395,53 @@ void game_screen()
 }
 
 // Insert text into the chat window
-int draw_to_chatwin(WINDOW *childwin, char *str, int max_char_per_line) // working on drawing to game screen before starting network portion
+int draw_to_chatwin(WINDOW *childwin, char *str) // working on drawing to game screen before starting network portion
 {
     int max_x, max_y;
     getmaxyx(childwin, max_y, max_x);
+
+    double shiftlines = ceil((strlen(str) / max_x) - 1);
+
+    int i, j;
+    int char_pos = 0;
+    for (i = 0; i <= shiftlines; i++)
+    {
+        wscrl(childwin, 1);
+
+        for (j = 0; j < max_x - 1; j++)
+        {
+            if (str[char_pos] == '\0')
+            {
+                break;
+            }
+            mvwaddch(childwin, max_y - 1, j, str[char_pos]);
+            char_pos++;
+        }
+        wrefresh(childwin);
+        if (str[char_pos] == '\0')
+            {
+                break;
+            }
+    }
+
 }
+
+// void shift_lines_up(WINDOW *childwin, char *str)
+// {
+//     int max_x, max_y;
+//     getmaxyx(childwin, max_y, max_x);
+
+//     char line1[max_x + 1];
+//     char line2[max_x + 1];
+
+    
+// }
+
+// char* win_get_line(WINDOW *childwin, int linepos, int max_y, int max_x)
+// {
+//     int max_x, max_y;
+//     getmaxyx(childwin, max_y, max_x);
+// }
 
 // Insert text into the input window
 int draw_to_inputwin()
