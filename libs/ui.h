@@ -1,6 +1,7 @@
 // Wrapper for the ncurses TUI
 
 #include "asciiframes.h"
+#include <errno.h>
 #include <form.h>
 #include <math.h>
 #include <ncurses.h>
@@ -319,15 +320,16 @@ void game_screen()
     keypad(chatwin, TRUE);
     nodelay(chatwin, FALSE);
     
-    field[0] = new_field(chaty - 2, chatx - 2, infoy, 0, 0, 0);
+    field[0] = new_field(1, chatx - 2, infoy + 1, 1, 0, 0);
     field[1] = NULL;
+
+    set_field_back(field[0], A_UNDERLINE);
 
     //set_field_back(field[0], COLOR_PAIR(1));
 
     chatform = new_form(field);
     set_form_win(chatform, chatwin);
-    set_form_sub(chatform, derwin(chatwin, LINES, COLS, 2, 2));
-
+    set_form_sub(chatform, derwin(chatwin, chaty - 2, chatx - 2, 1, 1));
     post_form(chatform);
     wrefresh(chatwin);
 
@@ -348,41 +350,58 @@ void game_screen()
         // }
         if (ch != ERR)
         {
+            int err_no = 0;
+            int ok = E_UNKNOWN_COMMAND;
+            char errbuf[128];
+            char okbuf[128];
+            char errnobuf[128];
+
+            form_driver(chatform, ch);
             switch (ch)
             {
                 case 10:
-                    form_driver(chatform, REQ_NEXT_FIELD);
-                    form_driver(chatform, REQ_END_LINE);
+                    err_no = form_driver(chatform, REQ_NEXT_FIELD);
+                    err_no = form_driver(chatform, REQ_END_LINE);
                     break;
                 case KEY_BACKSPACE:
-                    form_driver(chatform, REQ_DEL_PREV);
+                    err_no = form_driver(chatform, REQ_DEL_PREV);
                     break;
                 case 127:
-                    form_driver(chatform, REQ_DEL_PREV);
+                    err_no = form_driver(chatform, REQ_DEL_PREV);
                     break;
                 case KEY_DOWN:
-                    form_driver(chatform, REQ_NEXT_FIELD);
-                    form_driver(chatform, REQ_END_LINE);
+                    err_no = form_driver(chatform, REQ_NEXT_FIELD);
+                    err_no = form_driver(chatform, REQ_END_LINE);
                     break;
                 case KEY_UP:
-                    form_driver(chatform, REQ_PREV_FIELD);
-                    form_driver(chatform, REQ_END_LINE);
+                    err_no = form_driver(chatform, REQ_PREV_FIELD);
+                    err_no = form_driver(chatform, REQ_END_LINE);
                     break;
                 case KEY_LEFT:
-                    form_driver(chatform, REQ_LEFT_CHAR);
+                    err_no = form_driver(chatform, REQ_LEFT_CHAR);
                     break;
                 case KEY_RIGHT:
-                    form_driver(chatform, REQ_RIGHT_CHAR);
+                    err_no = form_driver(chatform, REQ_RIGHT_CHAR);
                     break;
                 case KEY_DC:
-                    form_driver(chatform, REQ_DEL_CHAR);
+                    err_no = form_driver(chatform, REQ_DEL_CHAR);
                 case KEY_F(10):
+                    err_no = form_driver(chatform, REQ_VALIDATION);
                     draw_to_chatwin(infowin, field_buffer(field[0], 0));
                     break;
                 default:
-                    form_driver(chatform, ch);
+                    err_no = form_driver(chatform, ch);
                     break;
             }
+
+            sprintf(errbuf, "%d", err_no);
+            sprintf(okbuf, "%d", ok);
+            sprintf(errnobuf, "%d", errno);
+
+            draw_to_chatwin(infowin, errbuf);
+            draw_to_chatwin(infowin, okbuf);
+            draw_to_chatwin(infowin, strerror(errno));
+            //draw_to_chatwin(infowin, field_buffer(field[0], 0));
         }
     }
 
