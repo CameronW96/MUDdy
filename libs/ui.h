@@ -9,7 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-#define DEBUG TRUE
+#define DEBUG FALSE
 
 // ******************************************* STATIC GLOBALS ******************************************* \\ 
 static WINDOW* inputwin;
@@ -289,11 +289,11 @@ void game_screen()
     WINDOW *infowinborder;
     WINDOW *infowin;
     FORM *chatform;
-    FIELD *field [2];
+    FIELD *fields[2];
 
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+    //init_pair(1, COLOR_BLUE, COLOR_BLACK);
 
-    // Determin child window size based on terminal size
+    // Determine child window size based on terminal size
     int statusy = LINES;
     int statusx = COLS * .20f;
     int infoy =  LINES * .85f;
@@ -301,37 +301,46 @@ void game_screen()
     int chaty = LINES - infoy;
     int chatx = COLS - statusx;
 
-    infowinborder = newwin(infoy, infox, 0, 0);
-    box(infowinborder, 0, 0);
-    wrefresh(infowinborder);
+    // infowinborder = newwin(infoy, infox, 0, 0);
+    // box(infowinborder, 0, 0);
+    // wrefresh(infowinborder);
 
     infowin = newwin(infoy -2, infox - 2, 1, 1);
     wrefresh(infowin);
     
     scrollok(infowin, TRUE);
 
-    statuswin = newwin(statusy, statusx, 0, infox);
-    box(statuswin, 0, 0);
-    wrefresh(statuswin);
+    // statuswin = newwin(statusy, statusx, 0, infox);
+    // box(statuswin, 0, 0);
+    // wrefresh(statuswin);
 
-    chatwin = newwin(chaty, chatx, infoy, 0);
-    box(chatwin, 0, 0);
+    chatwin = newwin(chaty - 2, chatx - 2, infoy + 2, 1);
+    //box(chatwin, 0, 0);
 
     keypad(chatwin, TRUE);
-    nodelay(chatwin, FALSE);
+    //nodelay(chatwin, FALSE);
     
-    field[0] = new_field(1, chatx - 2, infoy + 1, 1, 0, 0);
-    field[1] = NULL;
+    // fields[0] = new_field(1, chatx - 2, infoy + 1, 1, 0, 0);
+    // fields[1] = NULL;
+    // fields[2] = NULL;
 
-    set_field_back(field[0], A_UNDERLINE);
+    fields[0] = new_field(2, 10, 1, 1, 0, 0);
+	fields[1] = NULL;
 
-    //set_field_back(field[0], COLOR_PAIR(1));
+    set_field_back(fields[0], A_UNDERLINE);
+    //set_field_back(fields[1], A_UNDERLINE);
 
-    chatform = new_form(field);
+
+    //set_field_back(fields[0], COLOR_PAIR(1));
+
+    WINDOW* chatwinsub = derwin(chatwin, chaty - 4, chatx - 4, 1, 1);
+
+    chatform = new_form(fields);
     set_form_win(chatform, chatwin);
-    set_form_sub(chatform, derwin(chatwin, chaty - 2, chatx - 2, 1, 1));
+    set_form_sub(chatform, chatwinsub);
     post_form(chatform);
-    wrefresh(chatwin);
+    //wrefresh(chatwin);
+
 
     //Simulate waiting condition - replace with wait for connection
     // clock_t start = clock();
@@ -340,14 +349,9 @@ void game_screen()
 
     // }
 
-    int ch;
-    while(ch = wgetch(chatwin) != KEY_F(1))
+    int ch = 0;
+    while((ch = wgetch(chatwin)) != KEY_F(1))
     {
-        //ch = wgetch(chatwin);
-        // if (ch == ERR)
-        // {
-        //     continue;
-        // }
         if (ch != ERR)
         {
             int err_no = 0;
@@ -356,51 +360,56 @@ void game_screen()
             char okbuf[128];
             char errnobuf[128];
 
-            form_driver(chatform, ch);
-            switch (ch)
-            {
-                case 10:
-                    err_no = form_driver(chatform, REQ_NEXT_FIELD);
-                    err_no = form_driver(chatform, REQ_END_LINE);
-                    break;
-                case KEY_BACKSPACE:
-                    err_no = form_driver(chatform, REQ_DEL_PREV);
-                    break;
-                case 127:
-                    err_no = form_driver(chatform, REQ_DEL_PREV);
-                    break;
-                case KEY_DOWN:
-                    err_no = form_driver(chatform, REQ_NEXT_FIELD);
-                    err_no = form_driver(chatform, REQ_END_LINE);
-                    break;
-                case KEY_UP:
-                    err_no = form_driver(chatform, REQ_PREV_FIELD);
-                    err_no = form_driver(chatform, REQ_END_LINE);
-                    break;
-                case KEY_LEFT:
-                    err_no = form_driver(chatform, REQ_LEFT_CHAR);
-                    break;
-                case KEY_RIGHT:
-                    err_no = form_driver(chatform, REQ_RIGHT_CHAR);
-                    break;
-                case KEY_DC:
-                    err_no = form_driver(chatform, REQ_DEL_CHAR);
-                case KEY_F(10):
-                    err_no = form_driver(chatform, REQ_VALIDATION);
-                    draw_to_chatwin(infowin, field_buffer(field[0], 0));
-                    break;
-                default:
-                    err_no = form_driver(chatform, ch);
-                    break;
-            }
+            // switch (ch)
+            // {
+            //     // case 10:
+            //     //     err_no = form_driver(chatform, REQ_NEXT_FIELD);
+            //     //     err_no = form_driver(chatform, REQ_END_LINE);
+            //     //     break;
+            //     // case KEY_BACKSPACE:
+            //     //     err_no = form_driver(chatform, REQ_DEL_PREV);
+            //     //     break;
+            //     // case 127:
+            //     //     err_no = form_driver(chatform, REQ_DEL_PREV);
+            //     //     break;
+            //     // case KEY_DOWN:
+            //     //     err_no = form_driver(chatform, REQ_NEXT_FIELD);
+            //     //     err_no = form_driver(chatform, REQ_END_LINE);
+            //     //     break;
+            //     // case KEY_UP:
+            //     //     err_no = form_driver(chatform, REQ_PREV_FIELD);
+            //     //     err_no = form_driver(chatform, REQ_END_LINE);
+            //     //     break;
+            //     // case KEY_LEFT:
+            //     //     err_no = form_driver(chatform, REQ_LEFT_CHAR);
+            //     //     break;
+            //     // case KEY_RIGHT:
+            //     //     err_no = form_driver(chatform, REQ_RIGHT_CHAR);
+            //     //     break;
+            //     // case KEY_DC:
+            //     //     err_no = form_driver(chatform, REQ_DEL_CHAR);
+            //     // case KEY_F(10):
+            //     //     err_no = form_driver(chatform, REQ_VALIDATION);
+            //     //     draw_to_chatwin(infowin, field_buffer(fields[0], 0));
+            //     //     break;
+            //     default:
+            //         err_no = form_driver(chatform, ch);
+            //         break;
+            // }
+
+            err_no = form_driver(chatform, ch);
 
             sprintf(errbuf, "%d", err_no);
             sprintf(okbuf, "%d", ok);
-            sprintf(errnobuf, "%d", errno);
+            sprintf(errnobuf, "%d", ch);
 
             draw_to_chatwin(infowin, errbuf);
             draw_to_chatwin(infowin, okbuf);
-            draw_to_chatwin(infowin, strerror(errno));
+            draw_to_chatwin(infowin, errnobuf);
+            // draw_to_chatwin(infowin, strerror(errno));
+            // draw_to_chatwin(infowin, strerror(ok));
+            //draw_to_chatwin(infowin, (char*)ch);
+
             //draw_to_chatwin(infowin, field_buffer(field[0], 0));
         }
     }
@@ -410,11 +419,11 @@ void game_screen()
     delwin(chatwin);
     unpost_form(chatform);
     free_form(chatform);
-    free_field(field[0]);
+    free_field(fields[0]);
 }
 
 // Insert text into the chat window
-int draw_to_chatwin(WINDOW *childwin, char *str) // working on drawing to game screen before starting network portion
+int draw_to_chatwin(WINDOW *childwin, char *str) 
 {
     int max_x, max_y;
     getmaxyx(childwin, max_y, max_x);
